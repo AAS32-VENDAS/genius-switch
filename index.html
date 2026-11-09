@@ -13,8 +13,7 @@
   <meta property="og:description" content="An independent overview of The Genius Switch: format, features, offer details and important considerations.">
   <meta property="og:image" content="https://en-usa-thegeniusswitch.com/assets/images/vsls2prd.webp">
 
-  <!-- Google tag (AW-18483690321). Configure a separate Google Ads conversion action
-       and its conversion label before counting affiliate-button clicks as conversions. -->
+  <!-- Google tag (AW-18483690321) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18483690321"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -407,19 +406,54 @@
   </footer>
 
   <script>
-    // Records affiliate-button clicks as an analytics event.
-    // This is NOT a confirmed purchase and is not, by itself, a Google Ads conversion action.
-    document.querySelectorAll('.affiliate-link').forEach(function(link, index) {
-      link.addEventListener('click', function() {
-        if (typeof gtag === 'function') {
-          gtag('event', 'affiliate_click', {
-            event_category: 'affiliate',
-            event_label: 'the_genius_switch_button_' + (index + 1),
-            transport_type: 'beacon'
-          });
-        }
+    // CORREÇÃO AUTOMÁTICA DO TID - NÃO PRECISA MEXER NO LINK
+    // Pega o gclid, gbraid e wbraid que o Google coloca na URL da sua página
+    // e joga como TID no link da ClickBank. Assim a ClickBank consegue
+    // devolver a venda para o Google Ads.
+    (function() {
+      function getParam(name) {
+        try {
+          var params = new URLSearchParams(window.location.search);
+          return params.get(name);
+        } catch(e) { return null; }
+      }
+      var gclid = getParam('gclid');
+      var gbraid = getParam('gbraid');
+      var wbraid = getParam('wbraid');
+
+      // Se não tiver na URL, tenta pegar do cookie que o Google deixa ( _gcl_au )
+      // Isso ajuda quando a pessoa navega um pouco na página antes de clicar
+      if (!gclid) {
+        try {
+          var match = document.cookie.match(/_gcl_au=([^;]+)/);
+          if (match) { gclid = match[1]; }
+        } catch(e) {}
+      }
+
+      document.querySelectorAll('.affiliate-link').forEach(function(link, index) {
+        try {
+          var url = new URL(link.href);
+          // Só coloca o TID se ainda não tiver um
+          if (gclid && !url.searchParams.get('tid')) {
+            url.searchParams.set('tid', gclid);
+          }
+          if (gclid) url.searchParams.set('gclid', gclid);
+          if (gbraid) url.searchParams.set('gbraid', gbraid);
+          if (wbraid) url.searchParams.set('wbraid', wbraid);
+          link.href = url.toString();
+        } catch(e) {}
+
+        link.addEventListener('click', function() {
+          if (typeof gtag === 'function') {
+            gtag('event', 'affiliate_click', {
+              event_category: 'affiliate',
+              event_label: 'the_genius_switch_button_' + (index + 1),
+              transport_type: 'beacon'
+            });
+          }
+        });
       });
-    });
+    })();
   </script>
 </body>
 </html>
